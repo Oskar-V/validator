@@ -2,9 +2,9 @@
 This is a lightweight library for user input validation.
 Main focus is on speed and flexibility of the validation rules.
 
-By default `getInputErrors` and `getSchemaErrors` automatically detects and chooses the most performant checking method for your rule set.
+By default `getValueErrors` and `getSchemaErrors` automatically detects and chooses the most performant checking method for your rule set.
 
-If your rule set and/or schema are very large or complex, you may want to directly use `getInputErrorsSync`/`getSchemaErrorsSync` or `getInputErrorsAsync`/`getSchemaErrorsAsync` for improved performance on synchronous and asynchronous rule sets respectively.
+If your rule set and/or schema are very large or complex, you may want to directly use `getValueErrorsSync`/`getSchemaErrorsSync` or `getValueErrorsAsync`/`getSchemaErrorsAsync` for improved performance on synchronous and asynchronous rule sets respectively.
 
 Use synchronous versions of the functions for better performance if you don't need to support asynchronous checks on your inputs. 
 
@@ -16,9 +16,9 @@ const my_rules = {
   "Input must be more than 40": (i) => i > 40,
   "Input must be divisible by 10": (i) => !(i % 10)
 }
-console.log(getInputErrors(50, my_rules)); // []
-console.log(getInputErrors(11, my_rules)); // ["Input must be more than 40", "Input must be divisible by 10"]
-console.log(getInputErrors(30, my_rules)) // ["Input must be more than 40"]
+console.log(getValueErrors(50, my_rules)); // []
+console.log(getValueErrors(11, my_rules)); // ["Input must be more than 40", "Input must be divisible by 10"]
+console.log(getValueErrors(30, my_rules)) // ["Input must be more than 40"]
 ```
 # Installing
 ```typescript
@@ -35,7 +35,7 @@ pnpm install ivl // pnpm
 ## Frontend example
 ### `index.ts`
 ```typescript
-import { getInputErrors } from 'ivl';
+import { getValueErrors } from 'ivl';
 import type { RULES } from 'ivl';
 import { matchesRegex, minLength, maxLength, isType } from 'ivl/helpers';
 
@@ -70,9 +70,9 @@ const STRONG_PASSWORD_REQUIREMENTS: RULES = {
 const email_value = "some-value";
 const pw_value = "Passesweakpw";
 
-const email_errors = getInputErrors(email_value, EMAIL_REQUIREMENTS);
-const pw_errors = getInputErrors(pw_value, PASSWORD_REQUIREMENTS);
-const strong_pw_errors = getInputErrors(pw_value, STRONG_PASSWORD_REQUIREMENTS);
+const email_errors = getValueErrors(email_value, EMAIL_REQUIREMENTS);
+const pw_errors = getValueErrors(pw_value, PASSWORD_REQUIREMENTS);
+const strong_pw_errors = getValueErrors(pw_value, STRONG_PASSWORD_REQUIREMENTS);
 
 console.log({email_errors, pw_errors, strong_pw_errors});
 ```
@@ -84,7 +84,7 @@ console.log({email_errors, pw_errors, strong_pw_errors});
 ```typescript
 import { isType, minLength, maxLength, matchesRegex } from 'ivl/helpers';
 import { EMAIL_PATTERN } from 'ivl/patterns';
-import type { SCHEMA } from 'ivl';
+import type { RULE, SCHEMA } from 'ivl';
 import { checkValueInDatabase } from 'my-database-controller';
 
 const existsInDatabase = (key: string, table: string, exists: boolean = true): RULE =>
@@ -114,7 +114,7 @@ export const LOGIN_SCHEMA: SCHEMA =  {
 export const REGISTER_SCHEMA: SCHEMA = {
   // We can pass in an empty rule set to allow any value
   // Or we can omit the argument entirely and set the strict flag to false when checking the schema
-  organization_name: {}
+  organization_name: {},
   email: {
     ...EMAIL_REQUIREMENTS,
     "Email already registered": existsInDatabase('email','users', false)
@@ -125,7 +125,7 @@ export const REGISTER_SCHEMA: SCHEMA = {
 // Registering via invitation needs all the same values except organization name
 // inherit parts of rule sets, as opposed to extending the rule set as show in the
 // frontend example
-export const INVITE_REGISTER_SCHEMA = (({ organization_name, ...invite_schema }) => invite_schema)(REGISTRATION_SCHEMA)
+export const INVITE_REGISTER_SCHEMA = (({ organization_name, ...invite_schema }) => invite_schema)(REGISTER_SCHEMA)
 
 export const INVITATION_PARAM: SCHEMA = {
   invitation_code: {
@@ -138,8 +138,10 @@ export const INVITATION_PARAM: SCHEMA = {
 ### `index.ts`
 ```typescript
 import { Hono, ValidationTargets } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 import { validator } from 'hono/validator';
 import { getSchemaErrors } from 'ivl';
+import type { SCHEMA, CHECKABLE_OBJECT } from 'ivl';
 import { LOGIN_SCHEMA, REGISTER_SCHEMA, INVITE_REGISTER_SCHEMA, INVITATION_PARAM } from './rules.ts';
 
 // Wrapper for hono validator middleware
