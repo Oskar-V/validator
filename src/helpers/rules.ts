@@ -4,11 +4,14 @@ import type { RULE, RULE_SYNC } from '@types';
 
 // Type guards
 const hasLengthProperty = (obj: unknown): obj is { length: number } =>
-	typeof obj === 'string' || (obj !== null && typeof obj === 'object' && 'length' in obj) && typeof (obj as any).length === 'number';
+	typeof obj === 'string' ||
+	(obj !== null && typeof obj === 'object' && 'length' in obj && typeof (obj as { length: unknown }).length === 'number');
+
+export type TYPEOF_RESULT = "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function";
 
 // Helpers
 export const isType =
-	(type: "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"): RULE_SYNC =>
+	(type: TYPEOF_RESULT): RULE_SYNC =>
 		(value: unknown) => typeof value === type
 
 export const matchesRegex = (regex: RegExp): RULE_SYNC =>
@@ -39,10 +42,12 @@ export const numberBetween = (max = Infinity, min = -Infinity): RULE_SYNC =>
 	(i: unknown) =>
 		typeof i === 'number' && i >= min && i <= max
 
-export const acceptAnyAsync = (rules: RULE[] = []): RULE =>
-	async (i: unknown, ...overload: unknown[]) =>
+/** Passes if *any* of the given rules passes. Always async. */
+export const acceptAnyAsync = <V = unknown, O extends unknown[] = unknown[]>(rules: RULE<V, O>[] = []): RULE<V, O> =>
+	async (i: V, ...overload: O) =>
 		(await Promise.all(rules.map(rule => rule(i, ...overload)))).some(e => e)
 
-export const acceptAnySync = (rules: RULE_SYNC[] = []): RULE_SYNC =>
-	(i: unknown, ...overload: unknown[]) =>
+/** Passes if *any* of the given rules passes. All rules must be synchronous. */
+export const acceptAnySync = <V = unknown, O extends unknown[] = unknown[]>(rules: RULE_SYNC<V, O>[] = []): RULE_SYNC<V, O> =>
+	(i: V, ...overload: O) =>
 		rules.map((rule) => rule(i, ...overload)).some(e => e)

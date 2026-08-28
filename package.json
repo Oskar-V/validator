@@ -50,7 +50,9 @@
   "scripts": {
     "build": "rm -rf ./lib && bun run build.mjs",
     "prepublishOnly": "bun run build",
-    "benchmark": "bun run ./benchmark/index.ts"
+    "benchmark": "bun run ./benchmark/index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "test": "bun test && bun run typecheck"
   },
   "sideEffects": "false",
   "types": "lib/index.d.ts"
