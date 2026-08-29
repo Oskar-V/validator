@@ -1,22 +1,19 @@
-import dts from 'bun-plugin-dts'
+// Bundles the JS entrypoints. Type declarations are emitted separately by
+// `tsc -p tsconfig.build.json` (see the "build" script in package.json).
+const entrypoints = [
+	['./src/index.ts', './lib'],
+	['./src/patterns/index.ts', './lib/patterns'],
+	['./src/helpers/index.ts', './lib/helpers'],
+]
 
-await Bun.build({
-	entrypoints: ['./src/index.ts'],
-	outdir: './lib',
-	minify: true,
-	plugins: [dts()]
-})
-
-await Bun.build({
-	entrypoints: ['./src/patterns/index.ts'],
-	outdir: './lib/patterns',
-	minify: true,
-	plugins: [dts()]
-})
-
-await Bun.build({
-	entrypoints: ['./src/helpers/index.ts'],
-	outdir: './lib/helpers',
-	minify: true,
-	plugins: [dts()]
-})
+for (const [entrypoint, outdir] of entrypoints) {
+	const result = await Bun.build({
+		entrypoints: [entrypoint],
+		outdir,
+		minify: true,
+	})
+	if (!result.success) {
+		for (const log of result.logs) console.error(log)
+		process.exit(1)
+	}
+}

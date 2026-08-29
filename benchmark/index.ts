@@ -1,4 +1,4 @@
-import { run, bench, group, baseline } from 'mitata';
+import { run, bench, group } from 'mitata';
 import { getValueErrorsAsync, getValueErrors as getValueErrors, getValueErrorsSync } from '../src/index';
 import { matchesRegex } from '../src/helpers';
 import { EMAIL_PATTERN } from '../src/patterns'
@@ -9,7 +9,7 @@ import yup from 'yup';
 
 group('Regex promise vs no promise', () => {
 	const test_string = "test@email.com";
-	baseline("pure regex helper", () => matchesRegex(EMAIL_PATTERN)(test_string));
+	bench("pure regex helper", () => matchesRegex(EMAIL_PATTERN)(test_string)).baseline(true);
 	bench('async regex helper', () => getValueErrorsAsync(test_string, { "Pattern": matchesRegex(EMAIL_PATTERN) }));
 	bench('smart regex helper', () => getValueErrors(test_string, { "Pattern": matchesRegex(EMAIL_PATTERN) }));
 	bench('sync regex helper', () => getValueErrorsSync(test_string, { "Pattern": matchesRegex(EMAIL_PATTERN) }));
@@ -17,9 +17,9 @@ group('Regex promise vs no promise', () => {
 
 group('Compare simple regex with other libraries', () => {
 	const test_string = "test@email.com";
-	baseline('ivl smart regex', () => {
+	bench('ivl smart regex', () => {
 		const errors = getValueErrors(test_string, { "Must match regex": matchesRegex(EMAIL_PATTERN) })
-	})
+	}).baseline(true)
 	bench('ivl sync regex', () => {
 		const errors = getValueErrorsSync(test_string, { "Must match regex": matchesRegex(EMAIL_PATTERN) })
 	})
@@ -27,10 +27,10 @@ group('Compare simple regex with other libraries', () => {
 		const errors = getValueErrorsAsync(test_string, { "Must match regex": matchesRegex(EMAIL_PATTERN) })
 	})
 	bench('ivl sync custom', () => {
-		const errors = getValueErrorsSync(test_string, { "Must match regex": (i) => typeof i === 'string' && EMAIL_PATTERN.test(i) })
+		const errors = getValueErrorsSync(test_string, { "Must match regex": (i: unknown) => typeof i === 'string' && EMAIL_PATTERN.test(i) })
 	})
 	bench('ivl async custom', () => {
-		const errors = getValueErrorsAsync(test_string, { "Must match regex": (i) => typeof i === 'string' && EMAIL_PATTERN.test(i) })
+		const errors = getValueErrorsAsync(test_string, { "Must match regex": (i: unknown) => typeof i === 'string' && EMAIL_PATTERN.test(i) })
 	})
 	bench('zod sync regex', () => {
 		const errors = z.string().regex(EMAIL_PATTERN, "Must match regex").parse(test_string)
@@ -59,10 +59,6 @@ group('Compare simple regex with other libraries', () => {
 })
 
 await run({
-	silent: false, // enable/disable stdout output
-	avg: true, // enable/disable avg column (default: true)
-	json: false, // enable/disable json output (default: false)
 	colors: true, // enable/disable colors (default: true)
-	min_max: true, // enable/disable min/max column (default: true)
-	percentiles: true, // enable/disable percentiles column (default: true)
+	format: 'mitata', // 'mitata' | 'json' | 'markdown' | 'quiet'
 });
