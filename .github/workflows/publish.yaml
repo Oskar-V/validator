@@ -1,31 +1,50 @@
 name: Create Release and Publish
 
-# Trigger the release workflow
+# Runs only when a version tag (e.g. v1.2.3) is pushed. Pushes to main are
+# covered by run-tests.yaml; publishing from a branch has no tag to release.
 on:
   push:
-    branches:
-      - main
     tags:
       - "v*"
 
 jobs:
-  publish-npm:
-    name: Publish to NPM
+  verify:
+    name: Verify tag matches package version
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+      - name: Compare tag with package.json and jsr.json
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          expected="${TAG#v}"
+          pkg=$(node -p "require('./package.json').version")
+          jsr=$(node -p "require('./jsr.json').version")
+          if [ "$pkg" != "$expected" ] || [ "$jsr" != "$expected" ]; then
+            echo "::error::Tag $TAG does not match package.json ($pkg) / jsr.json ($jsr)"
+            exit 1
+          fi
+
+  publish-npm:
+    name: Publish to NPM
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # for npm provenance
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Install dependencies
-        run: bun install
-        
+        run: bun install --frozen-lockfile
+
       - name: Run tests
         run: bun test
 
@@ -33,59 +52,73 @@ jobs:
         run: bun run build
 
       - name: Publish to npm
-        uses: JS-DevTools/npm-publish@v3
+        uses: JS-DevTools/npm-publish@v4
         with:
           token: ${{ secrets.NPM_TOKEN }}
           provenance: true
 
   publish-jsr:
     name: Publish to JSR
+    needs: verify
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v7
       - name: Publish package
         run: npx jsr publish
 
-  # publish-github:
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: write # allow GITHUB_TOKEN to publish packages
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #     - name: Setup Bun
-  #       uses: oven-sh/setup-bun@v2
-  #     - name: Setup Node
-  #       uses: actions/setup-node@v3
-  #       with:
-  #         node-version: "20"
-  #     - name: Install dependencies
-  #       run: bun install
-  #     - name: Run tests
-  #       run: bun test
-  #     - name: Publish to github
-  #       uses: JS-DevTools/npm-publish@v3
-  #       with:
-  #         token: ${{ secrets.GITHUB_TOKEN }}
-  #         registry: "https://npm.pkg.github.com"
-
-  release:
-    name: Create git release
+  publish-github:
+    name: Publish to GitHub Packages
+    needs: verify
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # allow GITHUB_TOKEN to publish packages
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/checkout@v7
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Setup Node
+        uses: actions/setup-node@v7
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
+          node-version: "24"
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run tests
+        run: bun test
+
+      - name: Build files
+        run: bun run build
+
+      # GitHub Packages only accepts packages scoped to the repository owner,
+      # so publish as @<owner>/ivl there while npm/JSR keep the unscoped name.
+      - name: Scope package name to repository owner
+        run: npm pkg set name="@${OWNER,,}/ivl"
+        env:
+          OWNER: ${{ github.repository_owner }}
+
+      - name: Publish to GitHub Packages
+        uses: JS-DevTools/npm-publish@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          registry: "https://npm.pkg.github.com"
+
+  release:
+    name: Create GitHub release
+    needs: [publish-npm, publish-jsr, publish-github]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" --title "Release $TAG" --generate-notes --verify-tag

@@ -11,12 +11,12 @@
   },
   "main": "lib/index.js",
   "devDependencies": {
-    "@types/bun": "latest",
-    "bun-plugin-dts": "^0.2.1",
-    "mitata": "^0.1.11",
-    "typescript": "^5.2.2",
-    "yup": "^1.4.0",
-    "zod": "^3.23.8"
+    "@types/bun": "^1.4.0",
+    "mitata": "^1.0.34",
+    "tsc-alias": "^1.9.2",
+    "typescript": "^7.0.2",
+    "yup": "^1.7.1",
+    "zod": "^4.5.2"
   },
   "exports": {
     ".": {
@@ -48,10 +48,10 @@
   ],
   "license": "MIT",
   "scripts": {
-    "build": "rm -rf ./lib && bun run build.mjs",
+    "build": "rm -rf ./lib && bun run build.mjs && tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
     "prepublishOnly": "bun run build",
     "benchmark": "bun run ./benchmark/index.ts"
   },
-  "sideEffects": "false",
+  "sideEffects": false,
   "types": "lib/index.d.ts"
 }

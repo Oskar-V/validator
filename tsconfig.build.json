@@ -1,0 +1,9 @@
+{
+	// Used by `bun run build` to emit .d.ts files next to the bundled JS in ./lib
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"noEmit": false,
+		"declaration": true,
+		"emitDeclarationOnly": true
+	}
+}

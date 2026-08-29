@@ -12,6 +12,7 @@
 		"isolatedModules": true,
 		"noImplicitAny": true,
 		"allowJs": false,
+		"rootDir": "./src",
 		"outDir": "lib",
 		"resolveJsonModule": true,
 		// Bundler mode
@@ -27,11 +28,13 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noPropertyAccessFromIndexSignature": true,
-		"baseUrl": "./src",
+		// Aliases are rewritten to relative paths in the emitted .d.ts files by tsc-alias (see "build" script)
 		"paths": {
-			// Make paths an absolute import since we'll be importing it from various depths
+			"*": [
+				"./src/*"
+			],
 			"@types": [
-				"types.ts"
+				"./src/types"
 			],
 		},
 	},
