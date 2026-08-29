@@ -1,6 +1,6 @@
 {
   "name": "ivl",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "author": {
     "name": "Oskar Voorel",
     "email": "oskar@voorel.com"
@@ -50,7 +50,8 @@
   "scripts": {
     "build": "rm -rf ./lib && bun run build.mjs && tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
     "prepublishOnly": "bun run build",
-    "benchmark": "bun run ./benchmark/index.ts"
+    "benchmark": "bun run ./benchmark/index.ts",
+    "release": "bun run ./scripts/release.ts"
   },
   "sideEffects": false,
   "types": "lib/index.d.ts"
