@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 
-import { getSchemaErrors } from '../src';
-import { allowUndefined } from '../src/helpers'
+import { getSchemaErrors, getValueErrors } from '../src';
+import { allowUndefined, preprocess } from '../src/helpers'
 
 describe('Test allowUndefined schema helper', () => {
 	const passing_key_object = { incoming_key: "string" }
@@ -80,4 +80,20 @@ describe('Test allowUndefined schema helper', () => {
 			expect(t[idx].value).toEqual({ 'incoming_key': answers[idx] })
 		}
 	})
+});
+
+describe('Test preprocess schema helper', () => {
+	test('Sync rules stay sync', () => {
+		const rules = preprocess((i) => String(i).trim(), { "not empty": (s: string) => s.length > 0 });
+		expect(getValueErrors('   ', rules)).toEqual(["not empty"]);
+		expect(getValueErrors(' a ', rules)).toEqual([]);
+	});
+
+	test('Async rules stay async and their failures are reported', async () => {
+		const rules = preprocess((i) => Number(i), { "is even": async (n: number) => n % 2 === 0 });
+		const result = getValueErrors('3', rules);
+		expect(result).toBeInstanceOf(Promise);
+		expect(await result).toEqual(["is even"]);
+		expect(await getValueErrors('4', rules)).toEqual([]);
+	});
 });

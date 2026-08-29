@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 
 import { getValueErrors, getValueErrorsSync, getSchemaErrors, getSchemaErrorsSync, getValueErrorsAsync } from '../src';
-import type { SCHEMA } from '../src/types';
+import type { SCHEMA, SCHEMA_SYNC, CHECKABLE_OBJECT } from '../src/types';
 
 describe('Successfully detect failing rules', () => {
 	const passing_input = 'string';
@@ -37,7 +37,7 @@ describe('Successfully detect failing rules', () => {
 });
 
 describe('Successfully detect failing schemas', () => {
-	const schema: SCHEMA = {
+	const schema: SCHEMA_SYNC = {
 		passing_key: {
 			'passes': () => true,
 			'conditional': (i) => typeof i === 'string'
@@ -104,11 +104,11 @@ describe("Gracefully handle errors inside developer functions", () => {
 			.toEqual(Object.keys(rules))
 	})
 	test('Error inside simple async schema', async () => {
-		expect(await getSchemaErrors(input_string, schema))
+		expect(await getSchemaErrors(input_string as unknown as CHECKABLE_OBJECT, schema))
 			.toEqual({ 'username': Object.keys(rules) })
 	})
 	test('Error inside simple sync schema', () => {
-		expect(getSchemaErrorsSync(input_string, schema))
+		expect(getSchemaErrorsSync(input_string as unknown as CHECKABLE_OBJECT, schema))
 			.toEqual({ 'username': Object.keys(rules) })
 	})
 })

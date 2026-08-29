@@ -20,6 +20,37 @@ console.log(getValueErrors(50, my_rules)); // []
 console.log(getValueErrors(11, my_rules)); // ["Input must be more than 40", "Input must be divisible by 10"]
 console.log(getValueErrors(30, my_rules)) // ["Input must be more than 40"]
 ```
+# Type inference
+`getValueErrors` and `getSchemaErrors` infer their return type from the rules you pass in:
+
+```typescript
+const sync_rules = { "Is string": (i: unknown) => typeof i === 'string' };
+const async_rules = { "Exists": async (i: unknown) => await lookup(i) };
+
+getValueErrors('x', sync_rules);  // string[]
+getValueErrors('x', async_rules); // Promise<string[]>
+
+const errors = getSchemaErrors(input, {
+  name: sync_rules,
+  ids: [sync_rules, { "Is number": (i: unknown) => typeof i === 'number' }],
+});
+errors.name; // string[]
+errors.ids;  // string[][] - one error list per alternative rule set
+```
+
+Rules and rule sets are generic over the value type and any extra "overload" arguments:
+
+```typescript
+import type { RULE } from 'ivl';
+
+// A rule that only accepts strings and needs a context object passed as an overload
+const inDatabase: RULE<string, [ctx: { db: Database }]> = async (value, ctx) => ctx.db.has(value);
+```
+
+> **Note:** annotating a rule set as `RULES` (or a schema as `SCHEMA`) widens every rule to
+> "may be sync or async", so the return type becomes `string[] | Promise<string[]>`. Prefer
+> `satisfies RULES` / `satisfies SCHEMA`, which validates the shape without losing the inferred types.
+
 # Installing
 ```typescript
 bun add ivl // bun.js
@@ -42,37 +73,39 @@ import { matchesRegex, minLength, maxLength, isType } from 'ivl/helpers';
 // This pattern is also exportable from 'ivl/patterns'
 const EMAIL_PATTERN = /^[\w.%+-]+@[\w.-]+\.[a-zA-Z]{1,}$/;
 
-const EMAIL_REQUIREMENTS: RULES = {
+// `satisfies` checks the object against RULES while keeping each rule's exact type,
+// so `getValueErrors` can infer that this rule set is async.
+const EMAIL_REQUIREMENTS = {
   "Must be string": isType('string'),
   "Must be less then 100 characters": maxLength(100),
   "Not a valid email address": matchesRegex(EMAIL_PATTERN),
-  "That email is already in use": async (i) => {
+  "That email is already in use": async (i: unknown) => {
     // Fetch info from whatever backend and make a decision based on that asynchronously
     const email_in_use = await fetch(`https://mybackend/email-exists/${i}`)
     return !email_in_use // We will return true if the email is not already taken
   }
-};
+} satisfies RULES;
 
-const PASSWORD_REQUIREMENTS: RULES = {
+const PASSWORD_REQUIREMENTS = {
   "Must be string": isType('string'),
   "Must be at least 8 characters": minLength(8),
   "Must contain at least one upper case character": matchesRegex(/[A-Z]/),
   "Must contain at least one lower case character": matchesRegex(/[a-z]/),
-};
+} satisfies RULES;
 
 // You can of course expand on your existing rules: 
-const STRONG_PASSWORD_REQUIREMENTS: RULES = {
+const STRONG_PASSWORD_REQUIREMENTS = {
   ...PASSWORD_REQUIREMENTS,
   "Must contain at least one digit": matchesRegex(/\d/),
   "Must contain at least one symbol": matchesRegex(/[^\w\s]/),
-};
+} satisfies RULES;
 
 const email_value = "some-value";
 const pw_value = "Passesweakpw";
 
-const email_errors = getValueErrors(email_value, EMAIL_REQUIREMENTS);
-const pw_errors = getValueErrors(pw_value, PASSWORD_REQUIREMENTS);
-const strong_pw_errors = getValueErrors(pw_value, STRONG_PASSWORD_REQUIREMENTS);
+const email_errors = await getValueErrors(email_value, EMAIL_REQUIREMENTS); // Promise<string[]> - one rule is async
+const pw_errors = getValueErrors(pw_value, PASSWORD_REQUIREMENTS);             // string[] - all rules are sync
+const strong_pw_errors = getValueErrors(pw_value, STRONG_PASSWORD_REQUIREMENTS); // string[]
 
 console.log({email_errors, pw_errors, strong_pw_errors});
 ```

@@ -31,3 +31,6 @@ jobs:
 
       - name: Run tests
         run: bun test
+
+      - name: Typecheck (including type-level tests)
+        run: bun run typecheck
