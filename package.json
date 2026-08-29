@@ -52,7 +52,7 @@
     "prepublishOnly": "bun run build",
     "benchmark": "bun run ./benchmark/index.ts",
     "typecheck": "tsc --noEmit -p tsconfig.test.json",
-    "test": "bun test && bun run typecheck"
+    "test": "bun test && bun run typecheck",
     "release": "bun run ./scripts/release.ts"
   },
   "sideEffects": false,

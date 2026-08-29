@@ -1,7 +1,9 @@
 {
 	"extends": "./tsconfig.json",
 	"compilerOptions": {
-		"types": ["bun-types"]
+		"types": ["bun-types"],
+		// Includes ./test, so the base config's rootDir of ./src does not apply here
+		"rootDir": "."
 	},
 	"include": ["./src/**/*", "./test/**/*"]
 }

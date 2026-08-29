@@ -50,7 +50,7 @@ for (const file of VERSION_FILES) {
 // --- Make sure we are not tagging something broken --------------------------
 
 console.log('\nRunning tests...');
-await $`bun test`;
+await $`bun run test`;
 console.log('\nBuilding...');
 await $`bun run build`;
 

@@ -5,5 +5,16 @@
 		".": "./src/core.ts",
 		"./helpers": "./src/helpers/index.ts",
 		"./patterns": "./src/patterns/index.ts"
+	},
+	"imports": {
+		"@types": "./src/types.ts",
+		"core": "./src/core.ts"
+	},
+	"publish": {
+		"include": [
+			"src",
+			"README.md",
+			"LICENSE"
+		]
 	}
 }
