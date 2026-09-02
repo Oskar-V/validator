@@ -10,15 +10,15 @@ export const ISO_8601_TIME_PATTERN = /^(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-
 export const ISO_8601_DATE_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 
 // Shared fragments, so the UUID grammar and the embedded-IPv4 grammar are each defined once
-const uuid_source = (version: string) => `[0-9a-f]{8}-[0-9a-f]{4}-${version}[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}`;
+const uuid_source = (version: string): string => `[0-9a-f]{8}-[0-9a-f]{4}-${version}[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}`;
 const IPV4_SOURCE = '(?:(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)';
 
 // Versioned UUIDs plus the nil and max UUIDs (RFC 9562 §5.9 / §5.10)
-export const UUID_PATTERN = new RegExp(`^(?:${uuid_source('[1-8]')}|0{8}-0{4}-0{4}-0{4}-0{12}|f{8}-f{4}-f{4}-f{4}-f{12})$`, 'i');
-export const UUID_V4_PATTERN = new RegExp(`^${uuid_source('4')}$`, 'i');
+export const UUID_PATTERN: RegExp = new RegExp(`^(?:${uuid_source('[1-8]')}|0{8}-0{4}-0{4}-0{4}-0{12}|f{8}-f{4}-f{4}-f{4}-f{12})$`, 'i');
+export const UUID_V4_PATTERN: RegExp = new RegExp(`^${uuid_source('4')}$`, 'i');
 
-export const IPV4_PATTERN = new RegExp(`^${IPV4_SOURCE}$`);
-export const IPV6_PATTERN = new RegExp('^(?:' + [
+export const IPV4_PATTERN: RegExp = new RegExp(`^${IPV4_SOURCE}$`);
+export const IPV6_PATTERN: RegExp = new RegExp('^(?:' + [
 	'(?:[0-9a-f]{1,4}:){7}[0-9a-f]{1,4}',
 	'(?:[0-9a-f]{1,4}:){1,7}:',
 	'(?:[0-9a-f]{1,4}:){1,6}:[0-9a-f]{1,4}',
