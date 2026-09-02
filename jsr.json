@@ -1,6 +1,6 @@
 {
 	"name": "@ivl/ivl",
-	"version": "0.4.4",
+	"version": "0.4.5",
 	"exports": {
 		".": "./src/core.ts",
 		"./helpers": "./src/helpers/index.ts",
