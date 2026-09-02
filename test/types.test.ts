@@ -3,7 +3,7 @@
 import { test, expect } from 'bun:test';
 
 import { getValueErrors, getSchemaErrors, getSchemaErrorsSync, getSchemaErrorsAsync } from '../src';
-import { allowUndefined, preprocess, minLength, acceptAnySync } from '../src/helpers';
+import { allowUndefined, preprocess, minLength, acceptAnySync, acceptAnyAsync, notAsync, everyElementSync, everyElementAsync } from '../src/helpers';
 import type { RULE, RULES, SCHEMA, CHECKED_SCHEMA_SYNC } from '../src';
 
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
@@ -75,7 +75,16 @@ type _o1 = Expect<Equal<Parameters<typeof with_context>[1], { db: string }>>;
 // Rule helpers return sync rules, so composing them stays sync
 type _o2 = Expect<Equal<ReturnType<typeof getValueErrors<unknown, { a: ReturnType<typeof acceptAnySync>, b: ReturnType<typeof minLength> }>>, string[]>>;
 
+// Always-async combinators are typed RULE_ASYNC, so the result is a clean Promise (not a union)
+type _o3 = Expect<Equal<ReturnType<typeof getValueErrors<unknown, { a: ReturnType<typeof acceptAnyAsync>, b: ReturnType<typeof notAsync> }>>, Promise<string[]>>>;
+
+// Element rules may be typed against the element, not just `unknown`
+const typed_every_sync = everyElementSync((n: number) => n > 0);
+const typed_every_async = everyElementAsync(async (s: string) => s.length > 0);
+type _o4 = Expect<Equal<ReturnType<typeof getValueErrors<unknown, { a: typeof typed_every_sync }>>, string[]>>;
+type _o5 = Expect<Equal<ReturnType<typeof getValueErrors<unknown, { a: typeof typed_every_async }>>, Promise<string[]>>>;
+
 // Referenced here so `noUnusedLocals` is satisfied
-export type Assertions = [_v1, _v2, _v3, _v4, _v5, _s1, _s2, _s3, _s4, _s5, _s6, _s7, _s8, _h1, _h2, _h3, _h4, _o1, _o2];
+export type Assertions = [_v1, _v2, _v3, _v4, _v5, _s1, _s2, _s3, _s4, _s5, _s6, _s7, _s8, _h1, _h2, _h3, _h4, _o1, _o2, _o3, _o4, _o5];
 
 test('type assertions compile', () => { expect(true).toBe(true); });

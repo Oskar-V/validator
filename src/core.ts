@@ -153,7 +153,12 @@ export const getValueErrorsSync = <V>(
 	Object.entries(rules).reduce<string[]>(
 		(acc, [key, rule]) => {
 			try {
-				return rule(value, ...overload) ? acc : [...acc, key];
+				const result: unknown = rule(value, ...overload);
+				// A thenable can't be resolved synchronously - fail closed instead of
+				// treating the pending (truthy) promise as a pass
+				if (result !== null && (typeof result === 'object' || typeof result === 'function') && typeof (result as { then?: unknown }).then === 'function')
+					return [...acc, key];
+				return result ? acc : [...acc, key];
 			} catch (error) {
 				return [...acc, key];
 			}

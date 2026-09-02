@@ -9,6 +9,7 @@
     "type": "git",
     "url": "git+https://github.com/Oskar-V/ivl.git"
   },
+  "type": "module",
   "main": "lib/index.js",
   "devDependencies": {
     "@types/bun": "^1.4.0",

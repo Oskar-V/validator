@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 
 import { getSchemaErrors, getValueErrors } from '../src';
-import { allowUndefined, preprocess } from '../src/helpers'
+import { allowUndefined, allowNull, preprocess } from '../src/helpers'
 
 describe('Test allowUndefined schema helper', () => {
 	const passing_key_object = { incoming_key: "string" }
@@ -81,6 +81,36 @@ describe('Test allowUndefined schema helper', () => {
 		}
 	})
 });
+
+describe('Test allowNull schema helper', () => {
+	test('Null value passes synchronous rules and result stays sync', () => {
+		const rules = allowNull({
+			"Is string": (i: unknown) => typeof i === 'string',
+		});
+		const null_result = getValueErrors(null, rules);
+		expect(null_result.constructor.name).not.toBe('Promise');
+		expect(null_result).toEqual([]);
+		expect(getValueErrors(123, rules)).toEqual(['Is string']);
+		expect(getValueErrors('a', rules)).toEqual([]);
+	})
+
+	test('Null value passes asynchronous rules and result stays async', async () => {
+		const rules = allowNull({
+			"Is string": async (i: unknown) => await Promise.resolve(typeof i === 'string'),
+		});
+		const null_result = getValueErrors(null, rules);
+		expect(null_result).toBeInstanceOf(Promise);
+		expect(await null_result).toEqual([]);
+		expect(await getValueErrors(123, rules)).toEqual(['Is string']);
+	})
+
+	test('Undefined value still fails the rules', () => {
+		const rules = allowNull({
+			"Is string": (i: unknown) => typeof i === 'string',
+		});
+		expect(getValueErrors(undefined, rules)).toEqual(['Is string']);
+	})
+})
 
 describe('Test preprocess schema helper', () => {
 	test('Sync rules stay sync', () => {

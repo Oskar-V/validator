@@ -10,6 +10,7 @@ for (const [entrypoint, outdir] of entrypoints) {
 	const result = await Bun.build({
 		entrypoints: [entrypoint],
 		outdir,
+		format: 'esm',
 		minify: true,
 	})
 	if (!result.success) {

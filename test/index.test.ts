@@ -34,6 +34,19 @@ describe('Successfully detect failing rules', () => {
 		expect(getValueErrorsSync(passing_input, conditional_rules)).toEqual([]);
 		expect(getValueErrorsSync(failing_input, conditional_rules)).toEqual(Object.keys(conditional_rules))
 	});
+
+	test('A rule returning a Promise fails the sync path instead of silently passing', () => {
+		// Not declared `async`, so async detection can't see it - the sync path must fail
+		// closed rather than treat the pending (truthy) Promise as a pass.
+		const thenable_rules = {
+			"Is string": ((i: unknown) => Promise.resolve(typeof i === 'string')) as unknown as (i: unknown) => boolean,
+			"Resolves true": (() => Promise.resolve(true)) as unknown as () => boolean,
+		};
+		expect(getValueErrorsSync(failing_input, thenable_rules)).toEqual(['Is string', 'Resolves true']);
+		const smart = getValueErrors(failing_input, thenable_rules);
+		expect(smart.constructor.name).not.toBe('Promise');
+		expect(smart).toEqual(['Is string', 'Resolves true']);
+	});
 });
 
 describe('Successfully detect failing schemas', () => {
