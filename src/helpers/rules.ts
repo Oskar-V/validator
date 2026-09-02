@@ -1,6 +1,6 @@
 // Functions which affect a single rule
 
-import type { RULE, RULE_ASYNC, RULE_SYNC } from '@types';
+import type { RULE, RULE_ASYNC, RULE_SYNC } from '../types';
 
 // Type guards
 const hasLengthProperty = (obj: unknown): obj is { length: number } =>

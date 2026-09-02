@@ -1,7 +1,7 @@
 // Functions which affect a whole rule set - to be used inside schema objects
 
-import type { RULE, RULES } from '@types';
-import { isAsyncFunction } from 'core';
+import type { RULE, RULES } from '../types';
+import { isAsyncFunction } from '../core';
 
 /**
  * Re-declares each rule so that the parameters of the returned rule are `V` instead of the

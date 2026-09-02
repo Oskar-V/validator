@@ -10,7 +10,7 @@ import type {
 	RULES_KIND,
 	SCHEMA_KIND,
 	MAYBE_ASYNC,
-} from '@types';
+} from './types';
 
 const DEFAULT_SCHEMA_OPTIONS: SCHEMA_OPTIONS = {
 	strict: false,

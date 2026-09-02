@@ -28,15 +28,6 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noPropertyAccessFromIndexSignature": true,
-		// Aliases are rewritten to relative paths in the emitted .d.ts files by tsc-alias (see "build" script)
-		"paths": {
-			"*": [
-				"./src/*"
-			],
-			"@types": [
-				"./src/types"
-			],
-		},
 	},
 	"include": [
 		"./src/**/*"
