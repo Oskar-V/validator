@@ -56,18 +56,38 @@ export const getValueErrorsAsync = async <V>(
 	rules: RULES<V>,
 	...overload: unknown[]
 ): Promise<string[]> => {
-	const results: { [key: string]: Promise<boolean> | boolean } = {};
-	Object.entries(rules).forEach(([key, rule]) => {
-		// Wrap everything into a promise
-		results[key] = Promise.resolve(false)
-			.then(() => rule(value, ...overload))
-			.then((result) => results[key] = result)
-			.catch(() => {
-				return results[key] = false
-			});
-	});
+	const results: { [key: string]: boolean } = {};
+	const pending: Promise<unknown>[] = [];
+	for (const [key, rule] of Object.entries(rules)) {
+		// Insert the key immediately so the error order matches the rule order
+		results[key] = false;
+		if (isAsyncFunction(rule)) {
+			// Truly async rules still run concurrently
+			pending.push(
+				(rule(value, ...overload) as Promise<boolean>)
+					.then((result) => { results[key] = Boolean(result) })
+					.catch(() => { results[key] = false }));
+			continue;
+		}
+		// Sync rules run inline - no promise allocation or microtask hop
+		try {
+			const result: unknown = rule(value, ...overload);
+			if (result !== null && (typeof result === 'object' || typeof result === 'function') && typeof (result as { then?: unknown }).then === 'function') {
+				// A sync-declared rule returning a thenable is still awaited here,
+				// matching the previous promise-wrapped behavior
+				pending.push(
+					Promise.resolve(result as Promise<boolean>)
+						.then((r) => { results[key] = Boolean(r) })
+						.catch(() => { results[key] = false }));
+			} else {
+				results[key] = Boolean(result);
+			}
+		} catch {
+			results[key] = false;
+		}
+	}
 
-	await Promise.allSettled(Object.values(results));
+	if (pending.length) await Promise.allSettled(pending);
 
 	// Filter out the non empty errors and map to an array
 	const failed: string[] = [];
