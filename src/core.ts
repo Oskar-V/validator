@@ -70,9 +70,11 @@ export const getValueErrorsAsync = async <V>(
 	await Promise.allSettled(Object.values(results));
 
 	// Filter out the non empty errors and map to an array
-	return Object.entries(results).reduce<string[]>(
-		(acc, [error, val]) => (val ? acc : [...acc, error]),
-		[]);
+	const failed: string[] = [];
+	for (const [key, val] of Object.entries(results)) {
+		if (!val) failed.push(key);
+	}
+	return failed;
 }
 
 /**
@@ -149,21 +151,23 @@ export const getValueErrorsSync = <V>(
 	value: V,
 	rules: RULES_SYNC<V>,
 	...overload: unknown[]
-): string[] =>
-	Object.entries(rules).reduce<string[]>(
-		(acc, [key, rule]) => {
-			try {
-				const result: unknown = rule(value, ...overload);
-				// A thenable can't be resolved synchronously - fail closed instead of
-				// treating the pending (truthy) promise as a pass
-				if (result !== null && (typeof result === 'object' || typeof result === 'function') && typeof (result as { then?: unknown }).then === 'function')
-					return [...acc, key];
-				return result ? acc : [...acc, key];
-			} catch (error) {
-				return [...acc, key];
-			}
-		},
-		[]);
+): string[] => {
+	const failed: string[] = [];
+	for (const [key, rule] of Object.entries(rules)) {
+		try {
+			const result: unknown = rule(value, ...overload);
+			// A thenable can't be resolved synchronously - fail closed instead of
+			// treating the pending (truthy) promise as a pass
+			if (result !== null && (typeof result === 'object' || typeof result === 'function') && typeof (result as { then?: unknown }).then === 'function')
+				failed.push(key);
+			else if (!result)
+				failed.push(key);
+		} catch (error) {
+			failed.push(key);
+		}
+	}
+	return failed;
+}
 
 /**
  * Check a schema against all provided validation rules synchronously
@@ -180,19 +184,15 @@ export const getSchemaErrorsSync = <S extends SCHEMA_SYNC>(
 	options: SCHEMA_OPTIONS = DEFAULT_SCHEMA_OPTIONS,
 	...overload: unknown[]
 ): CHECKED_SCHEMA_SYNC<S> => {
-	const errors = Object.entries<RULES_SYNC | RULES_SYNC[]>(schema).reduce<{ [key: string]: string[] | string[][] }>(
-		(acc, [key, rules]) => {
-			if (Array.isArray(rules)) {
-				const tmp = rules.map((rule_set) => getValueErrorsSync(object[key], rule_set, ...overload));
-				if (tmp.some((e) => !e.length))
-					return { ...acc, [key]: [] }
-				return { ...acc, [key]: tmp }
-			}
-			return (
-				{ ...acc, [key]: getValueErrorsSync(object[key], rules, ...overload) }
-			)
-		},
-		{});
+	const errors: { [key: string]: string[] | string[][] } = {};
+	for (const [key, rules] of Object.entries<RULES_SYNC | RULES_SYNC[]>(schema)) {
+		if (Array.isArray(rules)) {
+			const tmp = rules.map((rule_set) => getValueErrorsSync(object[key], rule_set, ...overload));
+			errors[key] = tmp.some((e) => !e.length) ? [] : tmp;
+		} else {
+			errors[key] = getValueErrorsSync(object[key], rules, ...overload);
+		}
+	}
 
 	if (options.strict) {
 		const incoming_keys = Object.keys(object);
